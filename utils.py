@@ -24,15 +24,23 @@ class Writer:
         super().__init__(*args, **kwargs)
 
     async def write_bytes(self, data: bytes) -> None:
-        size = len(bytes)
+        size = len(data)
         size_bytes = size.to_bytes(4, byteorder="big")
         self.stream_writer.writelines([size_bytes, data])
         await self.stream_writer.drain()
 
     async def write(self, data: str) -> None:
         data_bytes = data.encode()
-        self.write_bytes(data_bytes)
+        await self.write_bytes(data_bytes)
 
     async def close(self) -> None:
         self.stream_writer.close()
         await self.stream_writer.wait_closed()
+
+    @property
+    def sockname(self):
+        return self.stream_writer.get_extra_info("sockname")
+
+    @property
+    def peername(self):
+        return self.stream_writer.get_extra_info("peername")

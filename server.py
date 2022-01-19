@@ -14,14 +14,12 @@ SUBSCRIBERS: DefaultDict[str, Deque] = defaultdict(deque)
 
 
 async def on_client_connect(stream_reader: StreamReader, stream_writer: StreamWriter):
-    print("client connected")
     reader = Reader(stream_reader)
     writer = Writer(stream_writer)
 
     channel_to_subscribe = await reader.read()
-    peername = writer.get_extra_info("peername")
     SUBSCRIBERS[channel_to_subscribe].append(writer)
-    logger.info(f"Remote {peername} subscribed to {channel_to_subscribe}.")
+    logger.info(f"Remote {writer.peername} subscribed to {channel_to_subscribe}.")
 
     try:
         while channel_name := await reader.read():
@@ -33,12 +31,12 @@ async def on_client_connect(stream_reader: StreamReader, stream_writer: StreamWr
             logger.info(f"Sending to {channel_name}: {data[:20]}.")
             await asyncio.gather(*[w.write(data) for w in connections])
     except asyncio.CancelledError:
-        logger.info(f"Remote {peername} closing connection.")
+        logger.info(f"Remote {writer.peername} closing connection.")
         await writer.close()
     except asyncio.IncompleteReadError:
-        logger.log(f"Remote {peername} disconnected.")
+        logger.log(f"Remote {writer.peername} disconnected.")
     finally:
-        logger.info(f"Remote {peername} closed.")
+        logger.info(f"Remote {writer.peername} closed.")
         SUBSCRIBERS[channel_to_subscribe].remove(writer)
 
 
